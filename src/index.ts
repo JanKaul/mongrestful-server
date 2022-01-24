@@ -1,5 +1,7 @@
 import { default as express } from "express"
 
+import "./auth"
+
 const app = express();
 const port = 3000;
 
