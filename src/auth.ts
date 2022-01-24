@@ -11,7 +11,7 @@ export const jwt = await new jose.EncryptJWT({ 'username': encodeURIComponent(us
     .setExpirationTime('2h')
     .encrypt(secret)
 
-console.log("JWT: " + jwt);
+console.log("Token: " + jwt);
 
 const { payload, protectedHeader } = await jose.jwtDecrypt(jwt, secret)
 
