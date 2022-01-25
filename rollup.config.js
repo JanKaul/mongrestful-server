@@ -4,10 +4,10 @@ import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 
 export default {
-    input: 'src/index.ts',
+    input: 'src/server.ts',
     output: {
         dir: 'dist',
         format: 'es'
     },
-    plugins: [json(), nodeResolve({ browser: false }), commonjs(), typescript({ target: "es2017", downlevelIteration: true })]
+    plugins: [json(), nodeResolve({ browser: false, preferBuiltins: true }), commonjs(), typescript({ target: "es2017", downlevelIteration: true })]
 };
