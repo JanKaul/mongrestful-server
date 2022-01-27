@@ -1,11 +1,9 @@
 import { MongoClient } from "mongodb";
 
-const url = 'mongodb://localhost:27017';
-
-const client = new MongoClient(url);
-
-export async function runMongoDb(app) {
+export async function runMongoDb(url, app) {
+    const client = new MongoClient(url);
     try {
+        const port = 3000;
         await client.connect();
         const adminDb = client.db("admin").admin();
         const databases = await (await adminDb.listDatabases()).databases;
@@ -14,6 +12,9 @@ export async function runMongoDb(app) {
                 res.send(database.name)
             })
         }
+        app.listen(port, () => {
+            console.log(`Mongrestful server listening on port ${port}`)
+        })
     } finally {
         await client.close();
     }
