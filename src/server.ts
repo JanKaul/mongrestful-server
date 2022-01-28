@@ -2,12 +2,16 @@ import { default as express } from "express"
 import { default as cors } from "cors"
 import { default as bodyParser } from "body-parser"
 import * as jose from "jose"
+import { Optional, Some, None } from "optional-typescript"
+import { match } from "ts-pattern"
 
 import { exportPublicKey, privateKey } from "./auth"
 import { MongoClient } from "mongodb";
 // import { runMongoDb } from "./database"
 
-let client: MongoClient | undefined = undefined
+let client: Optional<MongoClient> = None()
+
+let sessions = new Map()
 
 try {
     const app = express();
@@ -33,6 +37,8 @@ try {
 
         const sessionSecret = await jose.generateSecret('A256GCM') as jose.KeyLike
 
+
+
         const answer = await new jose.EncryptJWT({
             secret: encodeURIComponent(JSON.stringify(await jose.exportJWK(sessionSecret)))
         })
@@ -43,6 +49,6 @@ try {
         res.send(answer)
     })
 } finally {
-    if (client) { client.close() }
+    client.map(x => x.close())
 }
 

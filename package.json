@@ -20,7 +20,9 @@
     "cors": "^2.8.5",
     "express": "^4.17.2",
     "jose": "^4.3.9",
-    "mongodb": "^4.3.1"
+    "mongodb": "^4.3.1",
+    "optional-typescript": "^1.6.0",
+    "ts-pattern": "^3.3.5"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.1",
