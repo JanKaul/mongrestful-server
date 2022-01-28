@@ -55,7 +55,6 @@ try {
     })
 
     app.post('/close', async (req, res) => {
-        console.log(req["session"])
 
         const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
 
