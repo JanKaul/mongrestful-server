@@ -19,6 +19,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.17.2",
+    "express-session": "^1.17.2",
     "jose": "^4.3.9",
     "mongodb": "^4.3.1",
     "optional-typescript": "^1.6.0",
