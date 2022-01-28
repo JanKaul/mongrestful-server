@@ -43,15 +43,15 @@ try {
         client = match(client)
             .with({ hasValue: true }, (res) => maybe(res.unsafeLift()))
             .with({ hasValue: false }, (_) => {
-                let mongoUrl = new URL(decodeURIComponent(url as string))
+                let mongoUrl = new URL(decodeURIComponent(url as string).replace(/^http:\/\//i, 'mongodb://'))
                 mongoUrl.port = "27017"
-                mongoUrl.protocol = "mongodb:"
                 mongoUrl.hostname = "localhost"
 
                 try {
                     return maybe(new MongoClient(mongoUrl.toString()))
                 } catch (error) {
-                    return maybe(error)
+                    console.log(error)
+                    return nothing()
                 }
             })
             .exhaustive()
