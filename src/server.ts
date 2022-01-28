@@ -3,7 +3,7 @@ import { default as cors } from "cors"
 import { default as bodyParser } from "body-parser"
 import { default as session } from "express-session"
 import * as jose from "jose"
-import { Optional, Some, None } from "optional-typescript"
+import { Maybe, nothing, maybe, Either, left, right } from "tsmonads";
 import { match } from "ts-pattern"
 import { MongoClient } from "mongodb";
 
@@ -11,7 +11,7 @@ import { exportPublicKey, privateKey, exportCookieSecret } from "./auth"
 
 // import { runMongoDb } from "./database"
 
-let client: Optional<MongoClient> = None()
+let client: Maybe<MongoClient> = nothing()
 
 try {
     const app = express();
@@ -41,7 +41,7 @@ try {
         const { url, clientPublicKey } = payload
 
         client = match(client)
-            .with({ hasValue: true }, (res) => Some(res.val()))
+            .with({ hasValue: true }, (res) => maybe(res.unsafeLift()))
             .with({ hasValue: false }, (_) => {
                 let mongoUrl = new URL(decodeURIComponent(url as string))
                 mongoUrl.port = "27017"
@@ -49,9 +49,9 @@ try {
                 mongoUrl.hostname = "localhost"
 
                 try {
-                    return Some(new MongoClient(mongoUrl.toString()))
+                    return maybe(new MongoClient(mongoUrl.toString()))
                 } catch (error) {
-                    return Some(error)
+                    return maybe(error)
                 }
             })
             .exhaustive()
