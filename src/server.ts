@@ -38,18 +38,47 @@ try {
 
     app.post('/connect', async (req, res) => {
         const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, privateKey)
-        const { username, password, clientPublicKey } = payload
+        const { url, clientPublicKey } = payload
 
-        const sessionSecret = await jose.generateSecret('A256GCM') as jose.KeyLike
+        client = match(client)
+            .with({ hasValue: true }, (res) => Some(res.val()))
+            .with({ hasValue: false }, (_) => {
+                let mongoUrl = new URL(decodeURIComponent(url as string))
+                mongoUrl.port = "27017"
+                mongoUrl.protocol = "mongodb:"
+                mongoUrl.hostname = "localhost"
 
-        req["session"].secret = await jose.exportJWK(sessionSecret)
+                try {
+                    return Some(new MongoClient(mongoUrl.toString()))
+                } catch (error) {
+                    return Some(error)
+                }
+            })
+            .exhaustive()
 
-        const answer = await new jose.EncryptJWT({
-            secret: encodeURIComponent(JSON.stringify(await jose.exportJWK(sessionSecret)))
-        })
-            .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM' })
-            .setIssuedAt()
-            .encrypt(await jose.importSPKI(decodeURIComponent(clientPublicKey as string), 'RSA-OAEP-256'))
+        let answer = await match(client)
+            .with({ hasValue: true }, async (res) => {
+                if (!req["session"].secret) {
+                    const sessionSecret = await jose.generateSecret('A256GCM') as jose.KeyLike
+
+                    req["session"].secret = await jose.exportJWK(sessionSecret)
+                }
+                return await new jose.EncryptJWT({
+                    secret: encodeURIComponent(JSON.stringify(req["session"].secret))
+                })
+                    .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM' })
+                    .setIssuedAt()
+                    .encrypt(await jose.importSPKI(decodeURIComponent(clientPublicKey as string), 'RSA-OAEP-256'))
+            })
+            .with({ hasValue: false }, async (res) => {
+                return await new jose.EncryptJWT({
+                    secret: undefined
+                })
+                    .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM' })
+                    .setIssuedAt()
+                    .encrypt(await jose.importSPKI(decodeURIComponent(clientPublicKey as string), 'RSA-OAEP-256'))
+            })
+            .exhaustive()
 
         res.send(answer)
     })
