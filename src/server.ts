@@ -3,7 +3,7 @@ import { default as cors } from "cors"
 import { default as bodyParser } from "body-parser"
 import { default as session } from "express-session"
 import * as jose from "jose"
-import { Maybe, nothing, maybe, Either, left, right } from "tsmonads";
+import { Option, some, none, Result, ok, err } from "matchingmonads"
 import { match } from "ts-pattern"
 import { MongoClient } from "mongodb";
 
@@ -11,7 +11,7 @@ import { exportPublicKey, privateKey, exportCookieSecret } from "./auth"
 
 // import { runMongoDb } from "./database"
 
-let client: Maybe<MongoClient> = nothing()
+let client: Option<MongoClient> = none()
 
 try {
     const app = express();
@@ -41,38 +41,38 @@ try {
         const { url, clientPublicKey } = payload
 
         client = match(client)
-            .with({ hasValue: true }, (res) => maybe(res.unsafeLift()))
-            .with({ hasValue: false }, (_) => {
+            .with({ tag: "some" }, (x) => some(x.value))
+            .with({ tag: "none" }, (_) => {
                 let mongoUrl = new URL(decodeURIComponent(url as string).replace(/^http:\/\//i, 'mongodb://'))
                 mongoUrl.port = "27017"
                 mongoUrl.hostname = "localhost"
 
                 try {
-                    return maybe(new MongoClient(mongoUrl.toString()))
+                    return some(new MongoClient(mongoUrl.toString()))
                 } catch (error) {
                     console.log(error)
-                    return nothing()
+                    return none<MongoClient>()
                 }
             })
             .exhaustive()
 
         let answer = await match(client)
-            .with({ hasValue: true }, async (res) => {
+            .with({ tag: "some" }, async (_) => {
                 if (!req["session"].secret) {
                     const sessionSecret = await jose.generateSecret('A256GCM') as jose.KeyLike
 
                     req["session"].secret = await jose.exportJWK(sessionSecret)
                 }
                 return await new jose.EncryptJWT({
-                    secret: encodeURIComponent(JSON.stringify(req["session"].secret))
+                    result: ok(encodeURIComponent(JSON.stringify(req["session"].secret)))
                 })
                     .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM' })
                     .setIssuedAt()
                     .encrypt(await jose.importSPKI(decodeURIComponent(clientPublicKey as string), 'RSA-OAEP-256'))
             })
-            .with({ hasValue: false }, async (res) => {
+            .with({ tag: "none" }, async (_) => {
                 return await new jose.EncryptJWT({
-                    secret: undefined
+                    result: err("Error: No MongoDB client running on the server.")
                 })
                     .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM' })
                     .setIssuedAt()
@@ -90,8 +90,22 @@ try {
         const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
         const { authorized } = payload
 
+        const result = await match(client)
+            .with({ tag: "some" }, async (x) => {
+                let result;
+                try {
+                    await x.value.close()
+                    result = ok("Success: Client closed successfully.")
+                } catch (error) {
+                    result = err("Error: Closing MongoDb client failed.")
+                }
+                return result
+            })
+            .with({ tag: "none" }, async _ => err("Error: There is no MongoDB client running."))
+            .exhaustive()
+
         const answer = await new jose.EncryptJWT({
-            success: authorized
+            result: result
         })
             .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
             .setIssuedAt()
@@ -100,6 +114,6 @@ try {
         res.send(answer)
     })
 } finally {
-    client.map(x => x.close())
+    client.asyncMap(async (x: MongoClient) => await x.close())
 }
 
