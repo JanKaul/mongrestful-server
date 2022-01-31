@@ -4,8 +4,8 @@ import * as jose from "jose"
 import { Option, some, none, Result, ok, err } from "matchingmonads"
 import { match } from "ts-pattern"
 
-export function databaseRoute(dbName: string, dbOptions: DbOptions, client: Option<MongoClient>, app: Express) {
-    app.post("/" + dbName + "/collection", async (req, res) => {
+export function collectionRoute(dbName: string, dbOptions: DbOptions, collectionName: string, collectionOptions: CollectionOptions, client: Option<MongoClient>, app: Express) {
+    app.post("/" + dbName + "/" + collectionName, async (req, res) => {
 
         const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
 

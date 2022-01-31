@@ -5,11 +5,10 @@ import { default as session } from "express-session"
 import * as jose from "jose"
 import { Option, some, none, Result, ok, err } from "matchingmonads"
 import { match } from "ts-pattern"
-import { MongoClient } from "mongodb";
+import { DbOptions, MongoClient } from "mongodb";
 
 import { exportPublicKey, privateKey, exportCookieSecret } from "./auth"
-
-// import { runMongoDb } from "./database"
+import { databaseRoute } from "./database"
 
 let client: Option<MongoClient> = none()
 
@@ -25,8 +24,6 @@ try {
         resave: false,
         saveUninitialized: true,
     }))
-
-    // runMongoDb(app).catch(console.dir);
 
     app.listen(port, () => {
         console.log(`Mongrestful server listening on port ${port}`)
@@ -79,6 +76,38 @@ try {
                     .encrypt(await jose.importSPKI(decodeURIComponent(clientPublicKey as string), 'RSA-OAEP-256'))
             })
             .exhaustive()
+
+        res.send(answer)
+    })
+
+    app.post('/db', async (req, res) => {
+
+        const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
+
+        const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
+        const { dbName, dbOptions } = payload
+
+        const result = match(client)
+            .with({ tag: "some" }, (x) => {
+                let result;
+                try {
+                    const db = x.value.db(dbName as string, dbOptions as DbOptions)
+                    databaseRoute(dbName as string, dbOptions, client, app)
+                    result = ok("Success: Database is accessible at the route:" + dbName as string)
+                } catch (error) {
+                    result = err(error.toString())
+                }
+                return result
+            })
+            .with({ tag: "none" }, _ => err("Error: There is no MongoDB client running."))
+            .exhaustive()
+
+        const answer = await new jose.EncryptJWT({
+            result: result
+        })
+            .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+            .setIssuedAt()
+            .encrypt(sessionSecret)
 
         res.send(answer)
     })

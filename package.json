@@ -21,7 +21,7 @@
     "express": "^4.17.2",
     "express-session": "^1.17.2",
     "jose": "^4.3.9",
-    "matchingmonads": "^0.0.2",
+    "matchingmonads": "^0.0.4",
     "mongodb": "^4.3.1",
     "ts-pattern": "^3.3.5"
   },
