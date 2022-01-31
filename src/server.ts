@@ -93,7 +93,7 @@ try {
                 try {
                     const db = x.value.db(dbName as string, dbOptions as DbOptions)
                     databaseRoute(dbName as string, dbOptions, client, app)
-                    result = ok("Success: Database is accessible at the route:" + dbName as string)
+                    result = ok("Success: Database is accessible at the route: /" + dbName as string)
                 } catch (error) {
                     result = err(error.toString())
                 }

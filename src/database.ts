@@ -4,7 +4,10 @@ import * as jose from "jose"
 import { Option, some, none, Result, ok, err } from "matchingmonads"
 import { match } from "ts-pattern"
 
+import { collectionRoute } from "./collection";
+
 export function databaseRoute(dbName: string, dbOptions: DbOptions, client: Option<MongoClient>, app: Express) {
+
     app.post("/" + dbName + "/collection", async (req, res) => {
 
         const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
@@ -18,9 +21,10 @@ export function databaseRoute(dbName: string, dbOptions: DbOptions, client: Opti
                 try {
                     const db = x.value.db(dbName)
                     const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
-                    result = ok("Success: Database is accessible as the route:" + collectionName as string)
+                    collectionRoute(dbName, dbOptions, collectionName as string, collectionOptions as CollectionOptions, x, app)
+                    result = ok("Success: Collection is accessible at the route: /" + dbName + "/collection" + collectionName as string)
                 } catch (error) {
-                    result = err("Error: Closing MongoDb client failed.")
+                    result = err(error.toString())
                 }
                 return result
             })
