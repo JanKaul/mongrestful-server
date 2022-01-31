@@ -11,7 +11,7 @@ export function collectionRoutes(dbName: string, dbOptions: DbOptions, collectio
         const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
 
         const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
-        const { options } = payload
+        const { filter, options } = payload
 
         const result = await match(client)
             .with({ tag: "some" }, async (x) => {
@@ -19,7 +19,7 @@ export function collectionRoutes(dbName: string, dbOptions: DbOptions, collectio
                 try {
                     const db = (await x.value.connect()).db(dbName)
                     const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
-                    result = ok(await collection.findOne())
+                    result = ok(await collection.findOne(filter, options))
                 } catch (error) {
                     result = err(error.toString())
                 }
