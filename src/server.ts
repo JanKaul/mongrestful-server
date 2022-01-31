@@ -8,7 +8,7 @@ import { match } from "ts-pattern"
 import { DbOptions, MongoClient } from "mongodb";
 
 import { exportPublicKey, privateKey, exportCookieSecret } from "./auth"
-import { databaseRoute } from "./database"
+import { databaseRoutes } from "./database"
 
 let client: Option<MongoClient> = none()
 
@@ -37,15 +37,15 @@ try {
         const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, privateKey)
         const { url, clientPublicKey } = payload
 
-        client = match(client)
-            .with({ tag: "some" }, (x) => some(x.value))
-            .with({ tag: "none" }, (_) => {
+        client = await match(client)
+            .with({ tag: "some" }, async (x) => some(x.value))
+            .with({ tag: "none" }, async (_) => {
                 let mongoUrl = new URL(decodeURIComponent(url as string).replace(/^http:\/\//i, 'mongodb://'))
                 mongoUrl.port = "27017"
                 mongoUrl.hostname = "localhost"
 
                 try {
-                    return some(new MongoClient(mongoUrl.toString()))
+                    return some(await new MongoClient(mongoUrl.toString()).connect())
                 } catch (error) {
                     console.log(error)
                     return none<MongoClient>()
@@ -92,7 +92,7 @@ try {
                 let result;
                 try {
                     const db = x.value.db(dbName as string, dbOptions as DbOptions)
-                    databaseRoute(dbName as string, dbOptions, client, app)
+                    databaseRoutes(dbName as string, dbOptions, client, app)
                     result = ok("Success: Database is accessible at the route: /" + dbName as string)
                 } catch (error) {
                     result = err(error.toString())

@@ -4,7 +4,7 @@ import * as jose from "jose"
 import { Option, some, none, Result, ok, err } from "matchingmonads"
 import { match } from "ts-pattern"
 
-export function collectionRoute(dbName: string, dbOptions: DbOptions, collectionName: string, collectionOptions: CollectionOptions, client: Option<MongoClient>, app: Express) {
+export function collectionRoutes(dbName: string, dbOptions: DbOptions, collectionName: string, collectionOptions: CollectionOptions, client: Option<MongoClient>, app: Express) {
 
     app.post("/" + dbName + "/" + collectionName + "/findone", async (req, res) => {
 
@@ -17,7 +17,7 @@ export function collectionRoute(dbName: string, dbOptions: DbOptions, collection
             .with({ tag: "some" }, async (x) => {
                 let result;
                 try {
-                    const db = x.value.db(dbName)
+                    const db = (await x.value.connect()).db(dbName)
                     const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
                     result = ok(await collection.findOne())
                 } catch (error) {
