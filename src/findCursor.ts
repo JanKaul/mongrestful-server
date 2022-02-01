@@ -38,131 +38,35 @@ export function findCursorRoutes(dbName: string, dbOptions: DbOptions, collectio
         res.send(answer)
     })
 
-    // app.post("/" + dbName + "/" + collectionName + "/insertone", async (req, res) => {
+    app.post("/" + dbName + "/" + collectionName + "/find/toarray", async (req, res) => {
 
-    //     const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
+        const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
 
-    //     const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
-    //     const { doc, options } = payload
+        const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
+        const { filter, options } = payload
 
-    //     const result = await match(client)
-    //         .with({ tag: "some" }, async (x) => {
-    //             let result;
-    //             try {
-    //                 const db = (await x.value.connect()).db(dbName)
-    //                 const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
-    //                 result = ok(await collection.insertOne(doc, options))
-    //             } catch (error) {
-    //                 result = err(error.toString())
-    //             }
-    //             return result
-    //         })
-    //         .with({ tag: "none" }, async _ => err("Error: There is no MongoDB client running."))
-    //         .exhaustive()
+        const result = await match(client)
+            .with({ tag: "some" }, async (x) => {
+                let result;
+                try {
+                    const db = (await x.value.connect()).db(dbName)
+                    const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
+                    result = ok(await collection.find(filter, options).toArray())
+                } catch (error) {
+                    result = err(error.toString())
+                }
+                return result
+            })
+            .with({ tag: "none" }, async _ => err("Error: There is no MongoDB client running."))
+            .exhaustive()
 
-    //     const answer = await new jose.EncryptJWT({
-    //         result: result
-    //     })
-    //         .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-    //         .setIssuedAt()
-    //         .encrypt(sessionSecret)
+        const answer = await new jose.EncryptJWT({
+            result: result
+        })
+            .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+            .setIssuedAt()
+            .encrypt(sessionSecret)
 
-    //     res.send(answer)
-    // })
-
-    // app.post("/" + dbName + "/" + collectionName + "/insertmany", async (req, res) => {
-
-    //     const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
-
-    //     const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
-    //     const { docs, options } = payload
-
-    //     const result = await match(client)
-    //         .with({ tag: "some" }, async (x) => {
-    //             let result;
-    //             try {
-    //                 const db = (await x.value.connect()).db(dbName)
-    //                 const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
-    //                 result = ok(await collection.insertMany(docs as unknown[], options))
-    //             } catch (error) {
-    //                 result = err(error.toString())
-    //             }
-    //             return result
-    //         })
-    //         .with({ tag: "none" }, async _ => err("Error: There is no MongoDB client running."))
-    //         .exhaustive()
-
-    //     const answer = await new jose.EncryptJWT({
-    //         result: result
-    //     })
-    //         .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-    //         .setIssuedAt()
-    //         .encrypt(sessionSecret)
-
-    //     res.send(answer)
-    // })
-
-    // app.post("/" + dbName + "/" + collectionName + "/deleteone", async (req, res) => {
-
-    //     const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
-
-    //     const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
-    //     const { filter, options } = payload
-
-    //     const result = await match(client)
-    //         .with({ tag: "some" }, async (x) => {
-    //             let result;
-    //             try {
-    //                 const db = (await x.value.connect()).db(dbName)
-    //                 const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
-    //                 result = ok(await collection.deleteOne(filter, options))
-    //             } catch (error) {
-    //                 result = err(error.toString())
-    //             }
-    //             return result
-    //         })
-    //         .with({ tag: "none" }, async _ => err("Error: There is no MongoDB client running."))
-    //         .exhaustive()
-
-    //     const answer = await new jose.EncryptJWT({
-    //         result: result
-    //     })
-    //         .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-    //         .setIssuedAt()
-    //         .encrypt(sessionSecret)
-
-    //     res.send(answer)
-    // })
-
-    // app.post("/" + dbName + "/" + collectionName + "/deletemany", async (req, res) => {
-
-    //     const sessionSecret = await jose.importJWK(req["session"].secret, 'A256GCM')
-
-    //     const { payload, protectedHeader } = await jose.jwtDecrypt(req.body, sessionSecret)
-    //     const { filter, options } = payload
-
-    //     const result = await match(client)
-    //         .with({ tag: "some" }, async (x) => {
-    //             let result;
-    //             try {
-    //                 const db = (await x.value.connect()).db(dbName)
-    //                 const collection = db.collection(collectionName as string, collectionOptions as CollectionOptions)
-    //                 result = ok(await collection.deleteMany(filter, options))
-    //             } catch (error) {
-    //                 result = err(error.toString())
-    //             }
-    //             return result
-    //         })
-    //         .with({ tag: "none" }, async _ => err("Error: There is no MongoDB client running."))
-    //         .exhaustive()
-
-    //     const answer = await new jose.EncryptJWT({
-    //         result: result
-    //     })
-    //         .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-    //         .setIssuedAt()
-    //         .encrypt(sessionSecret)
-
-    //     res.send(answer)
-    // })
+        res.send(answer)
+    })
 }
