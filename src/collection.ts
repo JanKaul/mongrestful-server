@@ -4,6 +4,8 @@ import * as jose from "jose"
 import { Option, some, none, Result, ok, err } from "matchingmonads"
 import { match } from "ts-pattern"
 
+import { findCursorRoutes } from "./findCursor";
+
 export function collectionRoutes(dbName: string, dbOptions: DbOptions, collectionName: string, collectionOptions: CollectionOptions, client: Option<MongoClient>, app: Express) {
 
     app.post("/" + dbName + "/" + collectionName + "/findone", async (req, res) => {
@@ -165,4 +167,6 @@ export function collectionRoutes(dbName: string, dbOptions: DbOptions, collectio
 
         res.send(answer)
     })
+
+    findCursorRoutes(dbName, dbOptions, collectionName, collectionOptions, client, app)
 }
